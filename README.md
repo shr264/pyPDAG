@@ -6,7 +6,7 @@ This implements the Partition-DAG algorithm for covariance and DAG estimation fr
 
 From terminal type:
 ```
-pip install pyPDAG==0.0.2
+pip install pyPDAG==0.0.3
 ```
 
 ## Basic scripts
