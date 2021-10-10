@@ -12,8 +12,8 @@ pip install pyPDAG==0.0.2
 ## Basic scripts
 
 The program consists of the following scripts
-* data_generate.py: used to generate random multivariate data accoriding to a graph
-* PDAG.py: contains the main functions and class for Partition-DAG to estimate DAG
+* pdag/data_generate.py: used to generate random multivariate data accoriding to a graph
+* pdag/pdag.py: contains the main functions and class for Partition-DAG to estimate DAG
 * main.py: runs the program to generate the DAG
 
 ## Notebooks
