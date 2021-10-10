@@ -1,6 +1,13 @@
-# CSCS
+# Partition-DAG
 
-This implements the Partition-DAG algorithm for covariance and DAG estimation from [ESTIMATION OF GAUSSIAN DIRECTED ACYCLIC GRAPHS USING PARTIAL ORDERING INFORMATION WITH APPLICATIONS TO DREAM3 NETWORKS AND DAIRY CATTLE DATA](https://arxiv.org/pdf/1902.05173.pdf) by Kshitij Khare, Sang Oh, Syed Rahman and Bala Rajaratnam
+This implements the Partition-DAG algorithm for covariance and DAG estimation from [ESTIMATION OF GAUSSIAN DIRECTED ACYCLIC GRAPHS USING PARTIAL ORDERING INFORMATION WITH APPLICATIONS TO DREAM3 NETWORKS AND DAIRY CATTLE DATA](https://arxiv.org/pdf/1902.05173.pdf) by Syed Rahman, Kshitij Khare, George Michailidis, Carlos Martinez and Juan Carulla
+
+## Installation
+
+From terminal type:
+```
+pip install pyPDAG==0.0.2
+```
 
 ## Basic scripts
 
@@ -12,7 +19,7 @@ The program consists of the following scripts
 ## Notebooks
 
 A notebook with an example is also included
-* PDAG_example.ipynb
+* example.ipynb
 
 ## Example
 

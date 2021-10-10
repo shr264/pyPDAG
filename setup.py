@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1' 
+VERSION = '0.0.2' 
 DESCRIPTION = 'pyPDAG'
 LONG_DESCRIPTION = """Python version for Partion-DAG as outlined in https://arxiv.org/pdf/1902.05173.pdf
 """
