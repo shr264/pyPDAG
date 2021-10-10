@@ -117,10 +117,10 @@ def _diagonalBlock(B, S, l, m1, m2, p):
                 else:
                     u = np.random.uniform(0,1)
                     if u < 0.5:
-                        B[k][i] = Bki
+                        B[k][i] = qbki[1]
                         B[i][k] = 0
                     else:
-                        B[i][k] = Bki
+                        B[i][k] = qbik[1]
                         B[k][i] = 0
     return B
 
