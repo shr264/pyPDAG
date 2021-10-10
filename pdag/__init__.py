@@ -1,1 +1,1 @@
-from pdag import PDAG
+from pdag import *
