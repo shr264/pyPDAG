@@ -30,4 +30,4 @@ if __name__ == '__main__':
     #end = time.time()
     #print("Elapsed  (after compilation) = %s" % (end - start))
 
-    print(np.sum(Bhat>0))
+    print(np.sum(Bhat!=0))
