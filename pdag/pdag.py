@@ -19,6 +19,12 @@ def _softhresh(x,l):
     return np.sign(x)*max(abs(x)-l,0)
 
 @njit(fastmath=True)
+def _getActiveSet(B):
+    _active_set = np.nonzero(B)
+    _active_set2 = np.column_stack((_active_set[0],_active_set[1]))
+    return _active_set2
+
+@njit(fastmath=True)
 def _Bii(S,B,i):
     p = len(B)
     sumterm = 0
@@ -42,6 +48,15 @@ def _offDiagBlock(B,S,l,m1,m2,p):
 
     for i in range((m1+1),(m2),1):
         for k in range(m1):
+            B[k][i] = 0
+            B[i][k] = _Bik(S,B,i,k,l)
+    return(B)
+
+@njit(fastmath=True)
+def _offDiagBlockActive(B, S, l, m1, m2, p, active_set):
+
+    for i, k in active_set:
+        if m1+1 <= i < m2 and 0 <= k < m2:
             B[k][i] = 0
             B[i][k] = _Bik(S,B,i,k,l)
     return(B)
@@ -97,6 +112,39 @@ def _diagonalBlock(B, S, l, m1, m2, p):
     for i in range(m1+1,m2):
         for k in range(m1,i):
             #print(i,k)
+            if _isCyclic(B, i, k): # adding edge from k -> i cases cycle
+                B[k][i] = 0 # set B_ki = 0
+                B[i][k] = _Bik(S,B,i,k,l) # update B_ik
+            elif _isCyclic(B, k, i): # adding edge from k -> i cases cycle
+                B[i][k] = 0 # set B_ki = 0
+                B[k][i] = _Bik(S,B,k,i,l) # update B_ik   
+            else:
+                Bik = _Bik(S,B,i,k,l)
+                Bki = _Bik(S,B,k,i,l)
+                qbki = _qBki(S,Bki,B,k,i,l)
+                qbik = _qBki(S,Bik,B,i,k,l)
+                if qbki[0] < qbik[0]:
+                    B[k][i] = qbki[1]
+                    B[i][k] = 0
+                elif qbki[0] > qbik[0]:
+                    B[i][k] = qbik[1]
+                    B[k][i] = 0
+                else:
+                    u = np.random.uniform(0,1)
+                    if u < 0.5:
+                        B[k][i] = qbki[1]
+                        B[i][k] = 0
+                    else:
+                        B[i][k] = qbik[1]
+                        B[k][i] = 0
+    return B
+
+@njit(fastmath=True)
+def _diagonalBlockActive(B, S, l, m1, m2, p, active_set):
+    for i in range(m1,m2):
+        B[i][i] = _Bii(S,B,i)
+    for i, k in active_set:
+        if m1+1 <= i < m2 and m1 <= k < i:
             if _isCyclic(B, i, k): # adding edge from k -> i cases cycle
                 B[k][i] = 0 # set B_ki = 0
                 B[i][k] = _Bik(S,B,i,k,l) # update B_ik
@@ -203,22 +251,39 @@ def partial3(X, l, m1, m2, eps = 10^(-4), maxitr = 10, init=None):
     return B
 
 @njit(fastmath=True)
-def _blockPartial4(blocknum, B, S, l, m1, m2, m3, p, Bnew):
-    if blocknum == 0:
-        temp = _diagonalBlock(B,S,l,0,m1,p)
-        Bnew[0:m1][0:m1] = temp[0:m1][0:m1]
-    elif blocknum == 1:
-        temp = _offDiagBlock(B,S,l,m1,m2,p)
-        temp = _diagonalBlock(temp,S,l,m1,m2,p)
-        Bnew[m1:m2][0:m2] = temp[m1:m2][0:m2]
-    elif blocknum == 2:
-        temp = _offDiagBlock(B,S,l,m2,m3,p)
-        temp = _diagonalBlock(temp,S,l,m2,m3,p)
-        Bnew[m2:m3][0:m3] = temp[m2:m3][0:m3]
-    elif blocknum == 3:
-        temp = _offDiagBlock(B,S,l,m3,p,p)
-        temp = _diagonalBlock(temp,S,l,m3,p,p)
-        Bnew[m3:p][0:p] = temp[m3:p][0:p]
+def _blockPartial4(blocknum, B, S, l, m1, m2, m3, p, Bnew, active, active_set):
+    if not active:
+        if blocknum == 0:
+            temp = _diagonalBlock(B,S,l,0,m1,p)
+            Bnew[0:m1][0:m1] = temp[0:m1][0:m1]
+        elif blocknum == 1:
+            temp = _offDiagBlock(B,S,l,m1,m2,p)
+            temp = _diagonalBlock(temp,S,l,m1,m2,p)
+            Bnew[m1:m2][0:m2] = temp[m1:m2][0:m2]
+        elif blocknum == 2:
+            temp = _offDiagBlock(B,S,l,m2,m3,p)
+            temp = _diagonalBlock(temp,S,l,m2,m3,p)
+            Bnew[m2:m3][0:m3] = temp[m2:m3][0:m3]
+        elif blocknum == 3:
+            temp = _offDiagBlock(B,S,l,m3,p,p)
+            temp = _diagonalBlock(temp,S,l,m3,p,p)
+            Bnew[m3:p][0:p] = temp[m3:p][0:p]
+    else:
+        if blocknum == 0:
+            temp = _diagonalBlockActive(B,S,l,0,m1,p, active_set)
+            Bnew[0:m1][0:m1] = temp[0:m1][0:m1]
+        elif blocknum == 1:
+            temp = _offDiagBlockActive(B,S,l,m1,m2,p, active_set)
+            temp = _diagonalBlockActive(temp,S,l,m1,m2,p, active_set)
+            Bnew[m1:m2][0:m2] = temp[m1:m2][0:m2]
+        elif blocknum == 2:
+            temp = _offDiagBlockActive(B,S,l,m2,m3,p, active_set)
+            temp = _diagonalBlockActive(temp,S,l,m2,m3,p, active_set)
+            Bnew[m2:m3][0:m3] = temp[m2:m3][0:m3]
+        elif blocknum == 3:
+            temp = _offDiagBlockActive(B,S,l,m3,p,p, active_set)
+            temp = _diagonalBlockActive(temp,S,l,m3,p,p, active_set)
+            Bnew[m3:p][0:p] = temp[m3:p][0:p]
 
 @njit(parallel=True)
 def partial4(X, l, m1, m2, m3, eps = 10^(-4), maxitr = 10, init=None):
@@ -233,17 +298,34 @@ def partial4(X, l, m1, m2, m3, eps = 10^(-4), maxitr = 10, init=None):
         
     diff = 1
     itr = 1
+    active = False
+    active_itr = 1
+    active_set_condition = True
 
-    while( ( diff > eps ) and ( itr < maxitr ) ):  
-        Bnew = B
-          
-        for blocknum in prange(4):
-            _blockPartial4(blocknum, B, S, l, m1, m2, m3, p, Bnew)
+    while (active_itr==1) or (active_set_condition and active_itr < 4):
 
-        B = Bnew
-        diff = np.max(B-Bold)
-        Bold = B
-        itr = itr +1
+        old_active_set = new_active_set = _getActiveSet(B)
+        while( ( diff > eps ) and ( itr < maxitr ) ):  
+            #print("Active itr: ", active_itr, " itr: " , itr)
+            Bnew = B  
+            for blocknum in prange(4):
+                _blockPartial4(blocknum, B, S, l, m1, m2, m3, p, Bnew, active, new_active_set)
+            B = Bnew
+
+            diff = np.max(B-Bold)
+            Bold = B
+            itr = itr + 1
+            if not active:
+                active = True
+                new_active_set = _getActiveSet(B)
+
+        if new_active_set.shape[0] == old_active_set.shape[0] and new_active_set.shape[1] == old_active_set.shape[1]:
+            if (new_active_set == old_active_set).all():
+                active_set_condition = False
+
+        active = False
+        active_itr += 1
+        itr = 1
     
     return B
 
