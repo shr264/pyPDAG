@@ -79,16 +79,16 @@ def _isCyclicUtil(v, visited, recStack, graph, p):
 
 @njit(fastmath=True)
 def _isCyclic(B, i, j):
-    graph = 1*(B > 0)
+    graph = 1*(B != 0)
     graph[i][j] = 1
     np.fill_diagonal(graph, 0)
     p = len(B)
     visited = [False]*p
     recStack = [False]*p
-    for ii in range(p):
-        if visited[ii] == False:
-            if _isCyclicUtil(ii, visited, recStack, graph, p):
-                return True
+    # can we just do i and j here?
+    if visited[j] == False:
+        if _isCyclicUtil(j, visited, recStack, graph, p):
+            return True
     return False
 
 @njit(fastmath=True)
@@ -338,13 +338,13 @@ class PDAG:
     def fit(self,X, l, m1=None, m2=None, m3=None, eps = 10^(-4), maxitr = 10, init=None):
         if self.partitions == 2:
             assert isinstance(m1, int), 'm1 must be an integer'
-            self.Bhat = partial2(X, 0.1, m1, eps, maxitr, init)
+            self.Bhat = partial2(X, l, m1, eps, maxitr, init)
         elif self.partitions == 3:
             assert isinstance(m1, int) and isinstance(m2, int), 'm1 and m2 must be integers'
-            self.Bhat = partial3(X, 0.1, m1, m2, eps, maxitr, init)
+            self.Bhat = partial3(X, l, m1, m2, eps, maxitr, init)
         elif self.partitions == 4:
             assert isinstance(m1, int) and isinstance(m2, int) and isinstance(m3, int), 'm1, m2 and m3 must be integers'
-            self.Bhat = partial4(X, 0.1, m1, m2, m3, eps, maxitr, init)
+            self.Bhat = partial4(X, l, m1, m2, m3, eps, maxitr, init)
         return self.Bhat
 
     def getAdjacency(self):
