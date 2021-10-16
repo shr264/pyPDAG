@@ -21,7 +21,7 @@ if __name__ == '__main__':
     pdag4 = PDAG(4)
     Bhat = pdag4.fit(X, 1.0, int(p/4), int(2*p/4), int(3*p/4))
 
-    for p in [100,500]:
+    for p in [100,500, 1000]:
         print("For p = ", p, end=' ')
         n = int(p/2)
         omega, B, A, G = generate_random_partialB(int(p/4), 

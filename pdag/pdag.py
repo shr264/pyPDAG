@@ -62,14 +62,14 @@ def _offDiagBlockActive(B, S, l, m1, m2, p, active_set):
     return(B)
 
 @njit(fastmath=True)
-def _isCyclicUtil(v, visited, recStack, graph, p):
+def _isCyclicUtil(v, visited, recStack, graph, p, m1, m2):
     visited[v] = True
     recStack[v] = True
 
-    for neighbour in range(p):
+    for neighbour in range(m1, m2):
         if neighbour != v and graph[v][neighbour] == 1:
             if visited[neighbour] == False:
-                if _isCyclicUtil(neighbour, visited, recStack, graph, p) == True:
+                if _isCyclicUtil(neighbour, visited, recStack, graph, p, m1, m2) == True:
                     return True
             elif recStack[neighbour] == True:
                 return True
@@ -78,7 +78,7 @@ def _isCyclicUtil(v, visited, recStack, graph, p):
     return False
 
 @njit(fastmath=True)
-def _isCyclic(B, i, j):
+def _isCyclic(B, i, j, m1, m2):
     graph = 1*(B != 0)
     graph[i][j] = 1
     np.fill_diagonal(graph, 0)
@@ -87,7 +87,7 @@ def _isCyclic(B, i, j):
     recStack = [False]*p
     # can we just do i and j here?
     if visited[j] == False:
-        if _isCyclicUtil(j, visited, recStack, graph, p):
+        if _isCyclicUtil(j, visited, recStack, graph, p, m1, m2):
             return True
     return False
 
@@ -112,10 +112,10 @@ def _diagonalBlock(B, S, l, m1, m2, p):
     for i in range(m1+1,m2):
         for k in range(m1,i):
             #print(i,k)
-            if _isCyclic(B, i, k): # adding edge from k -> i cases cycle
+            if _isCyclic(B, i, k, m1, m2): # adding edge from k -> i cases cycle
                 B[k][i] = 0 # set B_ki = 0
                 B[i][k] = _Bik(S,B,i,k,l) # update B_ik
-            elif _isCyclic(B, k, i): # adding edge from k -> i cases cycle
+            elif _isCyclic(B, k, i, m1, m2): # adding edge from k -> i cases cycle
                 B[i][k] = 0 # set B_ki = 0
                 B[k][i] = _Bik(S,B,k,i,l) # update B_ik   
             else:
@@ -145,10 +145,10 @@ def _diagonalBlockActive(B, S, l, m1, m2, p, active_set):
         B[i][i] = _Bii(S,B,i)
     for i, k in active_set:
         if m1+1 <= i < m2 and m1 <= k < i:
-            if _isCyclic(B, i, k): # adding edge from k -> i cases cycle
+            if _isCyclic(B, i, k, m1, m2): # adding edge from k -> i cases cycle
                 B[k][i] = 0 # set B_ki = 0
                 B[i][k] = _Bik(S,B,i,k,l) # update B_ik
-            elif _isCyclic(B, k, i): # adding edge from k -> i cases cycle
+            elif _isCyclic(B, k, i, m1, m2): # adding edge from k -> i cases cycle
                 B[i][k] = 0 # set B_ki = 0
                 B[k][i] = _Bik(S,B,k,i,l) # update B_ik   
             else:
