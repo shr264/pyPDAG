@@ -37,7 +37,7 @@ if __name__ == '__main__':
         X = generate_random_MVN_data(n, omega)
 
         start = time.time()
-        Bhat = pdag4.fit(X, 0.2, int(p/4), int(2*p/4), int(3*p/4))
+        Bhat = pdag.fit(X, 0.3, [int(p/4), int(2*p/4), int(3*p/4)], max_itr = 100)
         end = time.time()
         print(",elapsed  (after compilation) = %s" % (end - start), end=' ')
 
