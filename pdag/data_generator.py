@@ -8,6 +8,7 @@ def generate_random_L(p = 10,
                       b = 0.7,
                       diag_a = 2,
                       diag_b = 5,
+                      z = 0.05,
                       plot = False,
                       G = None):
     """
@@ -25,20 +26,37 @@ def generate_random_L(p = 10,
         G: Directed graph
     """
     if(G is None):
-        G = nx.gn_graph(p)
-    if(nx.is_directed(G) is False):
-        print('G is not directed')
-        exit(1)
-    ### need to relabel vertices to agree with CSCS
-    mapping=dict(zip(G.nodes(),list(range(p-1,-1,-1))))
-    G=nx.relabel_nodes(G,mapping)
-    if(plot):
-        import matplotlib.pyplot as plt
-        plt.show()
-        nx.draw_shell(G, with_labels=True, font_weight='bold')    
-    A = nx.adjacency_matrix(G).todense()
-    L = np.multiply(A,((b - a) * np.random.random_sample(size = p*p) + a).reshape(p,p))
-    np.fill_diagonal(L,np.random.uniform(diag_a,diag_b,p))
+        L = np.random.uniform(low=a, high=b, size=(p,p))
+        L = L*np.tri(*L.shape)
+        L = L*np.random.binomial(1, z, size=(p,p))
+        if diag_a == diag_b:
+            np.fill_diagonal(L, diag_a)
+        else:
+            np.fill_diagonal(L,np.random.uniform(diag_a,diag_b,p))
+        G = nx.from_numpy_matrix(L.T, create_using=nx.DiGraph)
+        if(plot):
+            import matplotlib.pyplot as plt
+            plt.show()
+            nx.draw_shell(G, with_labels=True, font_weight='bold') 
+        A = 1.0*(L!=0)
+        np.fill_diagonal(A, 0)
+    else:
+        if(nx.is_directed(G) is False):
+            print('G is not directed')
+            exit(1)
+        ### need to relabel vertices to agree with CSCS
+        mapping=dict(zip(G.nodes(),list(range(p-1,-1,-1))))
+        G=nx.relabel_nodes(G,mapping)
+        if(plot):
+            import matplotlib.pyplot as plt
+            plt.show()
+            nx.draw_shell(G, with_labels=True, font_weight='bold')    
+        A = nx.adjacency_matrix(G).todense()
+        L = np.multiply(A,((b - a) * np.random.random_sample(size = p*p) + a).reshape(p,p))
+        if diag_a == diag_b:
+            np.fill_diagonal(L, diag_a)
+        else:
+            np.fill_diagonal(L,np.random.uniform(diag_a,diag_b,p))
     omega = np.matmul(L.T,L)
     return(omega, L, A, G)
 
@@ -47,6 +65,7 @@ def generate_random_B(p = 10,
                       b = 0.7,
                       diag_a = 2,
                       diag_b = 5,
+                      z = 0.05,
                       plot = False,
                       G = None):
     """
@@ -63,7 +82,7 @@ def generate_random_B(p = 10,
         A: Adjacency matrix
         G: Directed graph
     """
-    (_, L,A,G) = generate_random_L(p, a, b, diag_a, diag_b, plot, G)
+    (_, L,A,G) = generate_random_L(p, a, b, diag_a, diag_b, z, plot, G)
     permutation = np.random.permutation(p)
     perMatrix = np.eye(p)[:,permutation]
     B = np.matmul(np.matmul(perMatrix,L),perMatrix.T)
@@ -72,13 +91,14 @@ def generate_random_B(p = 10,
     return(omega, B,A,G)
 
 def generate_random_partialB(m1,
-                             m2,
-                             m3,
+                             m2=None,
+                             m3=None,
                              p = 10,
                              a = 0.3,
                              b = 0.7,
                              diag_a = 2,
                              diag_b = 5,
+                             z = 0.05,
                              plot = False,
                              G = None):
     """
@@ -95,12 +115,20 @@ def generate_random_partialB(m1,
         A: Adjacency matrix
         G: Directed graph
     """
-    (_, L,A,G) = generate_random_L(p, a, b, diag_a, diag_b, plot, G)
+    (_, L,A,G) = generate_random_L(p, a, b, diag_a, diag_b, z, plot, G)
     p1 = np.random.permutation(range(m1))
-    p2 = np.random.permutation(range(m1,m2))
-    p3 = np.random.permutation(range(m2,m3))
-    p4 = np.random.permutation(range(m3,p))
-    permutation = np.random.permutation(np.hstack([p1,p2,p3,p4]))
+    if m2 is None:
+        p2 = np.random.permutation(range(m1,p))
+        permutation = np.random.permutation(np.hstack([p1,p2]))
+    else:
+        p2 = np.random.permutation(range(m1,m2))
+        if m3 is None:
+            p3 = np.random.permutation(range(m2,p))
+            permutation = np.random.permutation(np.hstack([p1,p2,p3]))
+        else:     
+            p3 = np.random.permutation(range(m2,m3))
+            p4 = np.random.permutation(range(m3,p))
+            permutation = np.random.permutation(np.hstack([p1,p2,p3,p4]))
     perMatrix = np.eye(p)[:,permutation]
     B = np.matmul(np.matmul(perMatrix,L),perMatrix.T)
     A = np.matmul(np.matmul(perMatrix,A),perMatrix.T)
